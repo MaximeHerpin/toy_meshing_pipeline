@@ -1,0 +1,5 @@
+.venv/
+meshes_output/
+textured_meshes_output/
+tiles_output/
+dataset.las
