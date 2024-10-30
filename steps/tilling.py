@@ -2,16 +2,15 @@ from typing import List
 import laspy
 import os
 import numpy as np
-import tempfile
 import shutil
 import laspy
 import os
 import numpy as np
-import tempfile
 import shutil
 from plyfile import PlyData, PlyElement
+from tqdm import tqdm
 
-def tile_las_into_plys(las_file_path, tile_size_in_meters = 100, chunk_size = 1_000_000, output_dir="tiles_output") -> List[str]:
+def tile_las_into_plys(las_file_path, tile_size_in_meters:float = 100, chunk_size:int = 1_000_000, output_dir:str="tiles_output") -> List[str]:
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir, ignore_errors=True)
 
@@ -30,7 +29,8 @@ def tile_las_into_plys(las_file_path, tile_size_in_meters = 100, chunk_size = 1_
         tile_chunk_files = {}  # Mapping from tile keys to list of temporary file paths
         chunk_counter = 0
 
-        for points in f.chunk_iterator(chunk_size):
+        print("splitting las file into chunks")
+        for points in tqdm(f.chunk_iterator(chunk_size)):
             xs = points.x - min_x
             ys = points.y - min_y
             zs = points.z - min_z
@@ -78,9 +78,9 @@ def tile_las_into_plys(las_file_path, tile_size_in_meters = 100, chunk_size = 1_
                     greens_subset = greens[indices]
                     blues_subset = blues[indices]
                 else:
-                    reds_subset = np.ones(len(x_subset), dtype=np.uint8)
-                    greens_subset = np.zeros(len(x_subset), dtype=np.uint8)
-                    blues_subset = np.zeros(len(x_subset), dtype=np.uint8)
+                    reds_subset = np.astype(x_subset / (max_x - min_x) * 255, np.uint8)
+                    greens_subset = np.astype(y_subset / (max_y - min_y) * 255, np.uint8)
+                    blues_subset = np.zeros_like(x_subset, dtype=np.uint8)
 
                 # Create numpy structured array for PLY data with colors
                 vertex = np.array(
@@ -100,8 +100,8 @@ def tile_las_into_plys(las_file_path, tile_size_in_meters = 100, chunk_size = 1_
 
     result = []
 
-    # Write final PLY files for each tile
-    for tile_key, temp_file_paths in tile_chunk_files.items():
+    print("merging chunks into tiles")
+    for tile_key, temp_file_paths in tqdm(tile_chunk_files.items()):
         tile_x, tile_y = tile_key
         all_vertex_data = []
         for temp_file_path in temp_file_paths:

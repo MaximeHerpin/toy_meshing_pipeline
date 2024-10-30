@@ -1,9 +1,9 @@
 import shutil
-import sys
 import os
 from typing import List, Optional, Tuple
 import numpy as np
 import open3d as o3d
+from tqdm import tqdm
 
 def mesh_ply_file(ply_file, output_dir, depth: int = 8) -> Optional[Tuple[str, int]]:
     # Check if file exists
@@ -30,6 +30,7 @@ def mesh_ply_file(ply_file, output_dir, depth: int = 8) -> Optional[Tuple[str, i
     vertices_to_keep = densities > density_threshold
     mesh = mesh.select_by_index(np.where(vertices_to_keep)[0])
     mesh.remove_unreferenced_vertices()
+    mesh.compute_vertex_normals()
     
     # Save the mesh
     output_file = os.path.join(output_dir, os.path.basename(ply_file))
@@ -48,13 +49,14 @@ def mesh_point_clouds(ply_files, output_dir, max_total_polycount: int, meshing_d
     os.makedirs(output_dir)
     results = []
     total_polycount = 0
-    for ply_file in ply_files:
+    print("Meshing point clouds")
+    for ply_file in tqdm(ply_files):
         results.append(mesh_ply_file(ply_file, output_dir, depth=meshing_depth))
     
     total_polycount = sum([r[1] for r in results if r is not None])
     if total_polycount > max_total_polycount:
         print(f"Total polycount {total_polycount} exceeds maximum {max_total_polycount}. Decimating meshes.")
-        for i, (mesh_file, polycount) in enumerate(results):
+        for i, (mesh_file, polycount) in enumerate(tqdm(results)):
             if mesh_file is not None:
                 contribution = polycount / total_polycount
                 target_polycount = int(max_total_polycount * contribution)
