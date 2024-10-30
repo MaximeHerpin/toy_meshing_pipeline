@@ -7,7 +7,7 @@ converts las point cloud files into textured 3D meshes
 - the input point cloud has a somewhat uniform point density
 - the input point cloud is mostly a height field on the x-y plane
 
-Texturing is done by projecting the point into the normalized x-y plane of each tile, hence the assumption third assumption.
+Texturing is done by projecting the point into the normalized x-y plane of each tile, hence the third assumption.
 
 ## Usage
 ```
